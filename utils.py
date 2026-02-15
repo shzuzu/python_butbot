@@ -7,56 +7,74 @@ from typing import List, TypeVar
 
 T = TypeVar('T')
 
-def preparation_message(
-    href: str,
-    today: str,
-    tomorrow: str,
-    text: str,
-    page_text: str | None = None
-) -> str:
+def preparation_message(href: str, today: str, tomorrow: str, text: str, page_text: str = None) -> str:
     """
     Prepare message based on schedule information
     """
     import re
-
+    from datetime import datetime
     text = text.strip()
-    lower_text = text.lower()
-    page_text = page_text or ""
 
-    def build_message(title: str) -> str:
-        return (
-            f'{title}\n\n'
-            f'{text}\n\n'
-            f'🔗 <a href="{href}">Открыть PDF</a>'
-        )
+    # Helper function to get day of the week
+    def get_day_of_week(date_str):
+        try:
+            # Parse date string - handle both DD.MM.YYYY and DD.MM formats
+            if '.' in date_str and len(date_str.split('.')[-1]) == 4:  # DD.MM.YYYY format
+                parsed_date = datetime.strptime(date_str, '%d.%m.%Y')
+            else:  # Assume it's DD.MM format, use current year
+                current_year = datetime.now().year
+                date_with_year = f"{date_str}.{current_year}"
+                parsed_date = datetime.strptime(date_with_year, '%d.%m.%Y')
+            
+            # Return day of the week in Russian
+            days_of_week = ['понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота', 'воскресенье']
+            return days_of_week[parsed_date.weekday()]
+        except:
+            return ""  # Return empty string if parsing fails
 
-    # Универсальный паттерн даты:
-    # 12.02.2026 / 12.02 / 2026-02-12 / 12-02-2026
-    date_pattern = r'\b(\d{1,2}[.\-]\d{1,2}(?:[.\-]\d{2,4})?|\d{4}-\d{2}-\d{2})\b'
+    # If "Замена" is mentioned, look for any date in the text or page context
+    if "Замена" in text:
+        # First, look for date pattern DD.MM.YYYY or DD.MM in the immediate text
+        date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', text)
+        if date_match:
+            date_str = date_match.group(1)
+            day_of_week = get_day_of_week(date_str)
+            day_info = f" ({day_of_week})" if day_of_week else ""
+            
+            # Check if the date is tomorrow's date
+            if tomorrow in date_str:
+                return f'📅 <b>Расписание на завтра найдено!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+            # Check if the date is today's date
+            elif today in date_str:
+                return f'📅 <b>Расписание на завтра не найдено, найдено на сегодня!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+            else:
+                # Date is neither today nor tomorrow
+                return f'⚠️ <b>Найдено только такое расписание!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+        elif page_text:
+            # If no date in immediate text but page_text is provided, look there
+            date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', page_text)
+            if date_match:
+                date_str = date_match.group(1)
+                day_of_week = get_day_of_week(date_str)
+                day_info = f" ({day_of_week})" if day_of_week else ""
+                
+                # Check if the date is tomorrow's date
+                if tomorrow in date_str:
+                    return f'📅 <b>Расписание на завтра найдено!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+                # Check if the date is today's date
+                elif today in date_str:
+                    return f'📅 <b>Расписание на завтра не найдено, найдено на сегодня!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+                else:
+                    # Date is neither today nor tomorrow
+                    return f'⚠️ <b>Найдено только такое расписание!</b>\n\nЗамена в расписании на {date_str}{day_info}\n\n🔗 <a href="{href}">Открыть PDF</a>'
 
-    # --- ЗАМЕНА ---
-    if "замена" in lower_text:
-        match = re.search(date_pattern, text) or re.search(date_pattern, page_text)
-        if match:
-            return build_message(
-                f'⚠️ <b>Замена в расписании на {match.group(1)}!</b>'
-            )
+        # If still no date found, return generic message
+        return f'⚠️ <b>Найдено измененное расписание!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
 
-        return build_message(
-            '⚠️ <b>Найдено изменённое расписание!</b>'
-        )
-
-    # --- ЗАВТРА ---
-    if tomorrow.lower() in lower_text:
-        return build_message(
-            '📅 <b>Расписание на завтра найдено!</b>'
-        )
-
-    # --- СЕГОДНЯ ---
-    if today.lower() in lower_text:
-        return build_message(
-            '📅 <b>Расписание на завтра не найдено, найдено на сегодня!</b>'
-        )
+    if tomorrow in text:
+        return f'📅 <b>Расписание на завтра найдено!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+    elif today in text:
+        return f'📅 <b>Расписание на завтра не найдено, найдено на сегодня!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
 
     return ""
 

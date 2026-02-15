@@ -46,6 +46,21 @@ def debug_web_scraping():
         from utils import preparation_message
         result = preparation_message("https://example.com/test.pdf", "15.02", "16.02", div_text, div_text)
         print(f"\nFunction result: {result}")
+        
+        # Test with tomorrow's date in the text
+        test_text_tomorrow = "Замена в расписании на 16.02.2026"
+        result_tomorrow = preparation_message("https://example.com/test.pdf", "15.02", "16.02", test_text_tomorrow)
+        print(f"\nFunction result for tomorrow's date: {result_tomorrow}")
+        
+        # Test with today's date in the text
+        test_text_today = "Замена в расписании на 15.02.2026"
+        result_today = preparation_message("https://example.com/test.pdf", "15.02", "16.02", test_text_today)
+        print(f"\nFunction result for today's date: {result_today}")
+        
+        # Test with other date in the text
+        test_text_other = "Замена в расписании на 20.10.2025"
+        result_other = preparation_message("https://example.com/test.pdf", "15.02", "16.02", test_text_other)
+        print(f"\nFunction result for other date: {result_other}")
 
     except Exception as e:
         print(f"Error in debugging: {e}")
