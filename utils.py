@@ -7,22 +7,29 @@ from typing import List, TypeVar
 
 T = TypeVar('T')
 
-def preparation_message(href: str, today: str, tomorrow: str, text: str) -> str:
+def preparation_message(href: str, today: str, tomorrow: str, text: str, page_text: str = None) -> str:
     """
     Prepare message based on schedule information
     """
     import re
     text = text.strip()
 
-    # If "Замена" is mentioned, look for any date in the text
+    # If "Замена" is mentioned, look for any date in the text or page context
     if "Замена" in text:
-        # Look for date pattern DD.MM.YYYY or DD.MM anywhere in the text
+        # First, look for date pattern DD.MM.YYYY or DD.MM in the immediate text
         date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', text)
         if date_match:
             date_str = date_match.group(1)
             return f'⚠️ <b>Замена в расписании на {date_str}!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
-        else:
-            return f'⚠️ <b>Найдено замененное расписание!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+        elif page_text:
+            # If no date in immediate text but page_text is provided, look there
+            date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', page_text)
+            if date_match:
+                date_str = date_match.group(1)
+                return f'⚠️ <b>Замена в расписании на {date_str}!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+        
+        # If still no date found, return generic message
+        return f'⚠️ <b>Найдено замененное расписание!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
 
     if tomorrow in text:
         return f'📅 <b>Расписание на завтра найдено!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'

@@ -90,6 +90,9 @@ class ButBot:
 
             soup = BeautifulSoup(response.text, 'html.parser')
 
+            # First, collect all text from the page to help with date association
+            page_text = soup.get_text()
+            
             # Find all links
             for link in soup.find_all('a', href=True):
                 href = link['href']
@@ -100,7 +103,7 @@ class ButBot:
 
                 # Check if the link contains schedule information
                 text = link.get_text().strip()
-                msg = preparation_message(full_link, today, tomorrow, text)
+                msg = preparation_message(full_link, today, tomorrow, text, page_text)
 
                 if msg:
                     logger.info(msg)

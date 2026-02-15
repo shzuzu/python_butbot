@@ -40,7 +40,8 @@ def test_date_extraction():
             test_case["href"],
             test_case["today"],
             test_case["tomorrow"],
-            test_case["text"]
+            test_case["text"],
+            test_case["text"]  # Using the same text as page_text for testing
         )
         
         print(f"\nTest case {i}:")
