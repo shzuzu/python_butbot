@@ -1,0 +1,5 @@
+# Configuration for ButBot
+
+# Telegram Bot API Token
+# You need to get this from @BotFather on Telegram
+API_TOKEN: "YOUR_BOT_TOKEN_HERE"
