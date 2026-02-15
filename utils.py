@@ -7,34 +7,56 @@ from typing import List, TypeVar
 
 T = TypeVar('T')
 
-def preparation_message(href: str, today: str, tomorrow: str, text: str, page_text: str = None) -> str:
+def preparation_message(
+    href: str,
+    today: str,
+    tomorrow: str,
+    text: str,
+    page_text: str | None = None
+) -> str:
     """
     Prepare message based on schedule information
     """
     import re
+
     text = text.strip()
+    lower_text = text.lower()
+    page_text = page_text or ""
 
-    # If "Замена" is mentioned, look for any date in the text or page context
-    if "Замена" in text:
-        # First, look for date pattern DD.MM.YYYY or DD.MM in the immediate text
-        date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', text)
-        if date_match:
-            date_str = date_match.group(1)
-            return f'⚠️ <b>Замена в расписании на {date_str}!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
-        elif page_text:
-            # If no date in immediate text but page_text is provided, look there
-            date_match = re.search(r'\b(\d{2}\.\d{2}(?:\.\d{4})?)\b', page_text)
-            if date_match:
-                date_str = date_match.group(1)
-                return f'⚠️ <b>Замена в расписании на {date_str}!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
-        
-        # If still no date found, return generic message
-        return f'⚠️ <b>Найдено замененное расписание!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+    def build_message(title: str) -> str:
+        return (
+            f'{title}\n\n'
+            f'{text}\n\n'
+            f'🔗 <a href="{href}">Открыть PDF</a>'
+        )
 
-    if tomorrow in text:
-        return f'📅 <b>Расписание на завтра найдено!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
-    elif today in text:
-        return f'📅 <b>Расписание на завто не найдено, найдено на сегодня!</b>\n\n{text}\n\n🔗 <a href="{href}">Открыть PDF</a>'
+    # Универсальный паттерн даты:
+    # 12.02.2026 / 12.02 / 2026-02-12 / 12-02-2026
+    date_pattern = r'\b(\d{1,2}[.\-]\d{1,2}(?:[.\-]\d{2,4})?|\d{4}-\d{2}-\d{2})\b'
+
+    # --- ЗАМЕНА ---
+    if "замена" in lower_text:
+        match = re.search(date_pattern, text) or re.search(date_pattern, page_text)
+        if match:
+            return build_message(
+                f'⚠️ <b>Замена в расписании на {match.group(1)}!</b>'
+            )
+
+        return build_message(
+            '⚠️ <b>Найдено изменённое расписание!</b>'
+        )
+
+    # --- ЗАВТРА ---
+    if tomorrow.lower() in lower_text:
+        return build_message(
+            '📅 <b>Расписание на завтра найдено!</b>'
+        )
+
+    # --- СЕГОДНЯ ---
+    if today.lower() in lower_text:
+        return build_message(
+            '📅 <b>Расписание на завтра не найдено, найдено на сегодня!</b>'
+        )
 
     return ""
 
